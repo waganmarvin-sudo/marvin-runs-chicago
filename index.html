@@ -6,8 +6,14 @@
 <title>Marvin Runs Chicago — 26.2 Miles of Redemption for Clean Water</title>
 <meta name="description" content="Last year I trained for months and cramped out at mile 10. This October I'm going back to finish the Chicago Marathon — and every mile raises money for clean water with World Vision. Sponsor a mile.">
 <meta property="og:title" content="Marvin Runs Chicago — 26.2 Miles of Redemption">
-<meta property="og:description" content="I'm running the Chicago Marathon for World Vision. Sponsor one of my 26.2 miles and I'll run it for you.">
-<meta property="og:image" content="assets/marvin.jpg">
+<meta property="og:description" content="Last year, cramps ended my Chicago Marathon at mile 10. This year I finish — and every mile funds clean water. Sponsor a mile and I'll run it for you.">
+<meta property="og:image" content="https://waganmarvin-sudo.github.io/marvin-runs-chicago/marvin.jpg">
+<meta property="og:url" content="https://waganmarvin-sudo.github.io/marvin-runs-chicago/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Marvin Runs Chicago — 26.2 Miles of Redemption">
+<meta name="twitter:description" content="Sponsor one of my 26.2 Chicago Marathon miles for clean water — I'll run your mile for anyone you dedicate it to.">
+<meta name="twitter:image" content="https://waganmarvin-sudo.github.io/marvin-runs-chicago/marvin.jpg">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏃</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -292,8 +298,10 @@
    MARVIN: everything you'll ever need to update is right here.
    ============================================================ */
 const CONFIG = {
-  goal: 2000,          // your fundraising goal in dollars
-  raised: 0,           // update this as your TWV page total grows
+  goal: 3000,          // fallback goal — overridden by the live total below
+  raised: 300,         // fallback raised — overridden by the live total below
+  // World Vision's public API — the thermometer reads this live on every visit:
+  liveTotalUrl: "https://www.teamworldvision.org/api/participants/453843",
   donateUrl: "https://www.teamworldvision.org/participants/453843/donate",
   myEmail: "waganmarvin@gmail.com",
   raceDate: "2026-10-11T07:30:00-05:00",
@@ -306,12 +314,29 @@ const CONFIG = {
 };
 
 /* progress bar */
-document.getElementById("raised").textContent = CONFIG.raised.toLocaleString();
-document.getElementById("goal").textContent = CONFIG.goal.toLocaleString();
-requestAnimationFrame(() => {
-  document.getElementById("bar-fill").style.width =
-    Math.min(100, (CONFIG.raised / CONFIG.goal) * 100) + "%";
-});
+function renderProgress(raised, goal) {
+  document.getElementById("raised").textContent = raised.toLocaleString();
+  document.getElementById("goal").textContent = goal.toLocaleString();
+  requestAnimationFrame(() => {
+    document.getElementById("bar-fill").style.width =
+      Math.min(100, (raised / goal) * 100) + "%";
+  });
+}
+renderProgress(CONFIG.raised, CONFIG.goal);
+
+/* live total straight from Team World Vision's public API */
+if (CONFIG.liveTotalUrl) {
+  fetch(CONFIG.liveTotalUrl)
+    .then(r => r.json())
+    .then(d => {
+      const raised = d.sumDonations;
+      const goal = d.fundraisingGoal;
+      if (typeof raised === "number") {
+        renderProgress(Math.round(raised), typeof goal === "number" ? Math.round(goal) : CONFIG.goal);
+      }
+    })
+    .catch(() => {}); // network hiccup → fallback numbers stay
+}
 
 /* countdown */
 const race = new Date(CONFIG.raceDate);
